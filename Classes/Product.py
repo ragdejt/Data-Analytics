@@ -19,7 +19,7 @@ class Product:
     weight:float
     price:float
 
-    def get_data(self):
+    def to_dict(self):
         table_data = {
             "Nome":[self.name],
             "Categoria":[self.category],
@@ -38,7 +38,7 @@ class Product:
     
     def NewExcelTable(self):
         with pandas.ExcelWriter(path=EXCEL_FOLDER / (f"{self.name}.xlsx"), engine="xlsxwriter") as writer:
-            pandas.DataFrame(data=self.get_data()).to_excel(excel_writer=writer, sheet_name=self.name)
+            pandas.DataFrame(data=self.to_dict()).to_excel(excel_writer=writer, sheet_name=self.name, index=False)
             
     def NewSQLTable(self):
         with sqlite3.connect(SQL_PRODUCTS) as connect:
