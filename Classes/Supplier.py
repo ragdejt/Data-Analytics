@@ -44,5 +44,16 @@ class Supplier:
         else:
             connect.commit()
 
-    def SupplierPage(self):
-        pass
+    def SupplierPage():
+        streamlit.title("Fornecedores")
+        streamlit.sidebar.title("Fornecedores")
+        options = streamlit.sidebar.selectbox(
+            label="Selecione uma opção disponivel:",
+            options=["Adicionar", "Remover"]
+        )
+       
+        match options:
+            case "Adicionar":
+                pass
+            case "Remover":
+                pass

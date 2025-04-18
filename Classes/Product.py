@@ -19,6 +19,7 @@ class Product:
     weight:float
     price:float
 
+    
     def to_dict(self):
         table_data = {
             "Nome":[self.name],
@@ -37,10 +38,13 @@ class Product:
         return table_data
     
     def NewExcelTable(self):
-        with pandas.ExcelWriter(path=EXCEL_FOLDER / (f"{self.name}.xlsx"), engine="xlsxwriter") as writer:
-            pandas.DataFrame(data=self.to_dict()).to_excel(excel_writer=writer, sheet_name=self.name, index=False)
+        try:
+            with pandas.ExcelWriter(path=EXCEL_FOLDER / (f"{self.name}.xlsx"), engine="xlsxwriter", mode="w") as writer:
+                pandas.DataFrame(data=self.to_dict()).to_excel(excel_writer=writer, sheet_name=self.name, index=False)
+        except FileNotFoundError:
+            pass
             
-    def NewSQLTable(self):
+    def NewSQLTable():
         with sqlite3.connect(SQL_PRODUCTS) as connect:
             cursor = connect.cursor()
             cursor.execute("""
@@ -60,7 +64,6 @@ class Product:
             Preço NOT NULL
             )
             """)
-            connect.commit()
 
     def AddSQLTable(self):
         with sqlite3.connect(SQL_PRODUCTS) as connect:
@@ -75,21 +78,13 @@ class Product:
                 self.model, self.version, self.height, self.width, self.length,
                 self.weight, self.price
             ))
-            connect.commit()
 
     def ProductPage():
-        streamlit.set_page_config(
-            page_title="Data Analytics - Produto",
-            page_icon=None,
-            layout="centered",
-            initial_sidebar_state="collapsed"
-        )
-        streamlit.sidebar.title("Data Analytics")
+        streamlit.sidebar.title("Produtos")
         options = streamlit.sidebar.selectbox(
             label="Selecione uma opção disponivel:",
-            options=["Adicionar", "Editar", "Remover"]
+            options=["Adicionar", "Remover"]
         )
-        streamlit.title("Data Analytics")
         
         match options:
             case "Adicionar":
@@ -162,7 +157,7 @@ class Product:
                     placeholder="Digite o preço"
                 )
 
-                if streamlit.button(label="Cadastrar", key="RegisterButton", help="Register", on_click=None, icon=None, use_container_width=True):
+                if streamlit.button(label="Cadastrar", help="Register", icon=None, use_container_width=True):
                     try:
                         new_product = Product(
                             name=product_name,
@@ -178,15 +173,31 @@ class Product:
                             weight=weight,
                             price=price
                         )
-                        new_product.NewSQLTable()
                         new_product.AddSQLTable()
                         new_product.NewExcelTable()
                         streamlit.success("Produto cadastrado com sucesso!")
-                        streamlit.session_state["show_product_input"] = False
                     except Exception:
                         streamlit.error("Erro ao cadastrar produto!")
-            case "Editar":
-                pass
             case "Remover":
-                pass
-
+                streamlit.header("Remover Produto!")
+                product_remove = streamlit.text_input(
+                    label="Nome do produto",
+                    type="default",
+                    help="Product name",
+                    placeholder="Digite o nome do produto"
+                )
+                if streamlit.button(label="Procurar", help="Search", icon=None, use_container_width=True):
+                    with sqlite3.connect(SQL_PRODUCTS) as connect:
+                        cursor = connect.cursor()
+                        cursor.execute("SELECT * FROM Produtos WHERE Nome = ?", (product_remove,))
+                        results = cursor.fetchall()
+                        if results:
+                            streamlit.success("Produto encontrado com sucesso!")
+                            df = pandas.DataFrame(results)
+                            streamlit.dataframe(df)
+                            streamlit.success("Produto removido!")
+                            cursor.execute("DELETE FROM Produtos WHERE Nome = ?", (product_remove,))
+                            connect.commit()
+                        else:
+                            streamlit.error("Produto não encontrado!")
+                    
